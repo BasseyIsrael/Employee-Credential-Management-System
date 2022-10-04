@@ -1,0 +1,2 @@
+[ODBC]
+DRIVER=PostgreSQL ANSI(x64)
