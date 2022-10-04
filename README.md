@@ -9,5 +9,5 @@ You can also watch this repository to view as progress is being made on the proj
 Explore the existing files in the repository.
 
 - [Dataset (Text files and Postgres DB file)](Data)
-- [Main Files (Including Excel computations, adn Power Query M Codes)](Workbook)
+- [Main Files (Including Excel computations, and Power Query M Codes)](Workbook)
 - [Image Assets](assets)
