@@ -1,0 +1,42 @@
+// employee information
+let
+    Source = Csv.Document(File.Contents("C:\Users\HP\Desktop\Work\Excel\Excell\Data Analyst\Employee credential\employee information.csv"),[Delimiter=",", Columns=8, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}, {"Column2", type text}, {"Column3", type text}, {"Column4", type text}, {"Column5", type text}, {"Column6", type text}, {"Column7", type text}, {"Column8", type text}}),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"first_name", type text}, {"last_name", type text}, {"email", type text}, {"employee type", type text}, {"assigned project", type text}, {"position", type text}, {"work mode", type text}, {"last in", type text}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type1", each true),
+    #"Changed Type2" = Table.TransformColumnTypes(#"Filtered Rows",{{"last in", type text}}),
+    #"Removed Blank Rows" = Table.SelectRows(#"Changed Type2", each not List.IsEmpty(List.RemoveMatchingItems(Record.FieldValues(_), {"", null}))),
+    #"Removed Blank Rows1" = Table.SelectRows(#"Removed Blank Rows", each not List.IsEmpty(List.RemoveMatchingItems(Record.FieldValues(_), {"", null}))),
+    #"Filtered Rows1" = Table.SelectRows(#"Removed Blank Rows1", each ([last in] <> "")),
+    #"Sorted Rows1" = Table.Sort(#"Filtered Rows1",{{"first_name", Order.Ascending}}),
+    #"Changed Type with Locale" = Table.TransformColumnTypes(#"Sorted Rows1", {{"last in", type date}}, "en-GB")
+in
+    #"Changed Type with Locale"
+
+// credential data
+let
+    Source = Csv.Document(File.Contents("C:\Users\HP\Desktop\Work\Excel\Excell\Data Analyst\Employee credential\credential data.csv"),[Delimiter=",", Columns=5, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}, {"Column2", type text}, {"Column3", type text}, {"Column4", type text}, {"Column5", type text}}),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"first_name", type text}, {"last_name", type text}, {"c1 date", type text}, {"c2 date", type text}, {"c3 date", type text}}),
+    #"Changed Type with Locale" = Table.TransformColumnTypes(#"Changed Type1", {{"c1 date", type date}, {"c2 date", type date}, {"c3 date", type date}}, "en-GB")
+in
+    #"Changed Type with Locale"
+
+// Merged Data
+let
+    Source = Table.NestedJoin(#"employee information", {"first_name"}, #"credential data", {"first_name"}, "credential data", JoinKind.LeftOuter),
+    #"Expanded credential data" = Table.ExpandTableColumn(Source, "credential data", {"c1 date", "c2 date", "c3 date"}, {"c1 date", "c2 date", "c3 date"}),
+    #"Added Index" = Table.AddIndexColumn(#"Expanded credential data", "Index", 0, 1, Int64.Type),
+    #"Reordered Columns" = Table.ReorderColumns(#"Added Index",{"Index", "first_name", "last_name", "email", "employee type", "assigned project", "position", "work mode", "last in", "c1 date", "c2 date", "c3 date"}),
+    #"Unpivoted Other Columns" = Table.UnpivotOtherColumns(#"Reordered Columns", {"Index"}, "Attribute", "Value"),
+    #"Added Index1" = Table.AddIndexColumn(#"Unpivoted Other Columns", "Index.1", 0, 1, Int64.Type),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Index1",{"Index.1"}),
+    #"Pivoted Column" = Table.Pivot(#"Removed Columns", List.Distinct(#"Removed Columns"[Attribute]), "Attribute", "Value"),
+    #"Removed Columns1" = Table.RemoveColumns(#"Pivoted Column",{"Index"}),
+    #"Removed Blank Rows" = Table.SelectRows(#"Removed Columns1", each not List.IsEmpty(List.RemoveMatchingItems(Record.FieldValues(_), {"", null}))),
+    #"Cleaned Text" = Table.TransformColumns(#"Removed Blank Rows",{{"first_name", Text.Clean, type text}}),
+    #"Renamed Columns" = Table.RenameColumns(#"Cleaned Text",{{"first_name", "First Name"}, {"last_name", "Last Name"}, {"email", "Email Address"}, {"employee type", "Employment Type"}, {"assigned project", "Assigned Project"}, {"position", "Position"}, {"work mode", "Work Mode"}, {"last in", "Last Job Date"}, {"c1 date", "Cert 1 Ext Date"}, {"c2 date", "Cert 2 Exp Date"}, {"c3 date", "Cert 3 Exp Date"}})
+in
+    #"Renamed Columns"
